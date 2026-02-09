@@ -4,8 +4,16 @@ import { auth as betterAuth } from "../lib/auth";
 export const auth = (...roles: string[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
+      // Create proper headers for better-auth
+      const headers = new Headers();
+      Object.entries(req.headers).forEach(([key, value]) => {
+        if (value) {
+          headers.set(key, Array.isArray(value) ? value.join(", ") : value);
+        }
+      });
+
       const session = await betterAuth.api.getSession({
-        headers: req.headers as HeadersInit,
+        headers,
       });
 
       if (!session) {

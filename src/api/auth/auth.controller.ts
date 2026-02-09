@@ -44,35 +44,61 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
 const login = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, password } = req.body;
-    //   email and name are required
+
     if (!email || !password) {
       const error = new Error("Email and password are required") as appError;
       error.status = 400;
       return next(error);
     }
 
-    const result = await AuthServices.login({ email, password });
+    const result = await AuthServices.login({ password, email });
 
-    // Manually set session cookie if token is present
-    if (result?.token) {
-      res.cookie("skill_bridge.session_token", result.token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      });
+    if (!result) {
+      const error = new Error("Invalid credentials") as appError;
+      error.status = 401;
+      return next(error);
     }
 
-    res.status(200).json({
+    // Copy cookies from better-auth Response to Express response
+    const setCookieHeader = result.headers.get("set-cookie");
+    if (setCookieHeader) {
+      res.setHeader("Set-Cookie", setCookieHeader);
+    }
+
+    const data = await result.json();
+
+    // Check if login was successful based on HTTP status
+    const isSuccess = result.status >= 200 && result.status < 300;
+
+    if (!isSuccess) {
+      const error = new Error(
+        data?.message || data?.error || "Invalid email or password",
+      ) as appError;
+      error.status = result.status;
+      return next(error);
+    }
+
+    // Extract session token from Set-Cookie header for frontend to use
+    let sessionToken = null;
+    if (setCookieHeader) {
+      const tokenMatch = setCookieHeader.match(
+        /skill_bridge\.session_token=([^;]+)/,
+      );
+      if (tokenMatch) {
+        sessionToken = tokenMatch[1];
+      }
+    }
+
+    return res.status(result.status).json({
       success: true,
       message: "Login successful",
       data: {
-        token: result.token,
-        user: result.user,
+        user: data.user,
+        token: data.token,
       },
     });
   } catch (error: any) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -100,7 +126,80 @@ const details = async (req: Request, res: Response, next: NextFunction) => {
       data: result,
     });
   } catch (error: any) {
-    next(error);
+    return next(error);
+  }
+};
+
+const verifyEmail = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { token } = req.query;
+
+    if (!token || typeof token !== "string") {
+      const error = new Error("Verification token is required") as appError;
+      error.status = 400;
+      return next(error);
+    }
+
+    const result = await AuthServices.verifyEmail(token);
+
+    if (!result) {
+      const error = new Error("Failed to verify email") as appError;
+      error.status = 400;
+      return next(error);
+    }
+
+    const data = await result.json();
+
+    // Check if verification was successful based on HTTP status
+    const isSuccess = result.status >= 200 && result.status < 300;
+
+    if (!isSuccess) {
+      const error = new Error(
+        data?.message ||
+          data?.error ||
+          "Email verification failed. The link may have expired.",
+      ) as appError;
+      error.status = result.status;
+      return next(error);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Email verified successfully",
+    });
+  } catch (error: any) {
+    return next(error);
+  }
+};
+
+const logoutUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Convert Express headers to Headers object for better-auth
+    const headers = new Headers();
+    Object.entries(req.headers).forEach(([key, value]) => {
+      if (typeof value === "string") {
+        headers.set(key, value);
+      } else if (Array.isArray(value)) {
+        headers.set(key, value.join(", "));
+      }
+    });
+
+    const result = await AuthServices.logoutUser(headers);
+
+    if (result) {
+      // Copy cookies from better-auth Response to Express response
+      const setCookieHeader = result.headers.get("set-cookie");
+      if (setCookieHeader) {
+        res.setHeader("Set-Cookie", setCookieHeader);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error: any) {
+    return next(error);
   }
 };
 
@@ -108,4 +207,6 @@ export const AuthControllers = {
   register,
   login,
   details,
+  verifyEmail,
+  logoutUser,
 };

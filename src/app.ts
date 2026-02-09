@@ -7,9 +7,6 @@ import { appError } from "./types/appError";
 
 const app = express();
 
-// json setup
-app.use(express.json());
-
 // cors setup
 app.use(
   cors({
@@ -17,6 +14,9 @@ app.use(
     credentials: true,
   }),
 );
+
+// json setup
+app.use(express.json());
 
 // root route
 app.get("/", (req: Request, res: Response) => {

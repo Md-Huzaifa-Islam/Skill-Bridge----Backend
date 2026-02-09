@@ -18,4 +18,14 @@ router.get(
   AuthControllers.details,
 );
 
+// verify route
+router.get("/verify", AuthControllers.verifyEmail);
+
+// logout route
+router.get(
+  "/logout",
+  auth(UserRoles.admin, UserRoles.student, UserRoles.teacher),
+  AuthControllers.logoutUser,
+);
+
 export { router as AuthRoutes };

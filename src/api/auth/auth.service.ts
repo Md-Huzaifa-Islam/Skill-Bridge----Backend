@@ -14,11 +14,12 @@ const register = async ({ name, email, password, role }: registerParams) => {
 };
 
 const login = async ({ email, password }: loginParams) => {
-  return await auth.api.signInEmail({
+  return auth.api.signInEmail({
     body: {
       email,
       password,
     },
+    asResponse: true,
   });
 };
 
@@ -31,8 +32,25 @@ const details = async (userId: string) => {
       email: true,
       role: true,
       is_banned: true,
+      emailVerified: true,
       createdAt: true,
     },
+  });
+};
+
+const verifyEmail = async (token: string) => {
+  return auth.api.verifyEmail({
+    query: {
+      token,
+    },
+    asResponse: true,
+  });
+};
+
+const logoutUser = async (headers: Headers) => {
+  return auth.api.signOut({
+    headers,
+    asResponse: true,
   });
 };
 
@@ -40,4 +58,6 @@ export const AuthServices = {
   register,
   login,
   details,
+  verifyEmail,
+  logoutUser,
 };

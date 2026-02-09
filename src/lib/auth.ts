@@ -1,8 +1,8 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { config } from "../config/config";
 import { prisma } from "./prisma";
 import { UserRoles } from "../../generated/prisma/enums";
-import { config } from "../config/config";
 import { sendEmail } from "./sendemail";
 
 export const auth = betterAuth({
@@ -15,20 +15,6 @@ export const auth = betterAuth({
   },
 
   trustedOrigins: [config.app_url!, config.backend_url!],
-  user: {
-    additionalFields: {
-      role: {
-        type: "string",
-        required: false,
-        defaultValue: UserRoles.student,
-      },
-      is_banned: {
-        type: "boolean",
-        required: false,
-        defaultValue: false,
-      },
-    },
-  },
 
   emailAndPassword: {
     enabled: true,
@@ -59,6 +45,21 @@ export const auth = betterAuth({
           html,
         });
       }
+    },
+  },
+
+  user: {
+    additionalFields: {
+      role: {
+        type: "string",
+        required: false,
+        defaultValue: UserRoles.student,
+      },
+      is_banned: {
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+      },
     },
   },
 });
