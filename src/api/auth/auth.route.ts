@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { AuthControllers } from "./auth.controller";
+import { auth } from "../../middleware/auth";
+import { UserRoles } from "../../../generated/prisma/enums";
 
 const router = Router();
 
@@ -10,6 +12,10 @@ router.post("/register", AuthControllers.register);
 router.post("/login", AuthControllers.login);
 
 // details route
-router.get("/me", AuthControllers.details);
+router.get(
+  "/me",
+  auth(UserRoles.admin, UserRoles.student, UserRoles.teacher),
+  AuthControllers.details,
+);
 
 export { router as AuthRoutes };

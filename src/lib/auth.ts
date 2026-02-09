@@ -9,6 +9,12 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
+
+  advanced: {
+    cookiePrefix: "skill_bridge",
+  },
+
+  trustedOrigins: [config.app_url!, config.backend_url!],
   user: {
     additionalFields: {
       role: {

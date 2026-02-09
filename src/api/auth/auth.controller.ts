@@ -25,6 +25,7 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
       return next(error);
     }
     const result = await AuthServices.register({ name, email, password, role });
+
     res.status(201).json({
       success: true,
       message: "User created successfully",
@@ -51,6 +52,17 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
     }
 
     const result = await AuthServices.login({ email, password });
+
+    // Manually set session cookie if token is present
+    if (result?.token) {
+      res.cookie("skill_bridge.session_token", result.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+    }
+
     res.status(200).json({
       success: true,
       message: "Login successful",
@@ -66,15 +78,27 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
 
 const details = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const result = await AuthServices.details();
-    // res.status(200).json({
-    //   success: true,
-    //   message: "Login successful",
-    //   data: {
-    //     token: result.token,
-    //     user: result.user,
-    //   },
-    // });
+    const userId = req.user?.id;
+
+    if (!userId) {
+      const error = new Error("User not authenticated") as appError;
+      error.status = 401;
+      return next(error);
+    }
+
+    const result = await AuthServices.details(userId);
+
+    if (!result) {
+      const error = new Error("User not found") as appError;
+      error.status = 404;
+      return next(error);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "User details retrieved successfully",
+      data: result,
+    });
   } catch (error: any) {
     next(error);
   }

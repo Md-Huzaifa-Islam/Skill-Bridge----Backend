@@ -1,4 +1,5 @@
 import { auth } from "../../lib/auth";
+import { prisma } from "../../lib/prisma";
 import { loginParams, registerParams } from "../../types/auth";
 
 const register = async ({ name, email, password, role }: registerParams) => {
@@ -21,7 +22,19 @@ const login = async ({ email, password }: loginParams) => {
   });
 };
 
-const details = async () => {};
+const details = async (userId: string) => {
+  return await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      is_banned: true,
+      createdAt: true,
+    },
+  });
+};
 
 export const AuthServices = {
   register,
