@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -11,4 +5,159 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+enum UserRoles {
+  student @map("STUDENT")
+  teacher @map("TEACHER")
+  admin   @map("ADMIN")
+}
+
+model User {
+  id            String         @id
+  name          String
+  email         String
+  emailVerified Boolean        @default(false)
+  image         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  role          UserRoles      @default(student)
+  is_banned     Boolean        @default(false)
+  tutorProfiles TutorProfile[]
+  bookings      Booking[]
+
+  @@unique([email])
+  @@map("users")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model Category {
+  id            String         @id @unique @default(uuid())
+  name          String
+  tutorProfiles TutorProfile[]
+
+  @@map("categories")
+}
+
+model TutorProfile {
+  id             String  @id @unique @default(uuid())
+  user_id        String
+  category_id    String
+  description    String?
+  price_per_hour Int
+  is_featured    Boolean @default(false)
+
+  user       User        @relation(fields: [user_id], references: [id])
+  category   Category    @relation(fields: [category_id], references: [id])
+  availables Available[]
+  bookings   Booking[]
+
+  @@map("tutor_profiles")
+}
+
+enum WeekDay {
+  saturday  @map("SATURDAY")
+  sunday    @map("SUNDAY")
+  monday    @map("MONDAY")
+  tuesday   @map("TUESDAY")
+  wednesday @map("WEDNESDAY")
+  thursday  @map("THURSDAY")
+  friday    @map("FRIDAY")
+}
+
+model Available {
+  id         String   @id @unique @default(uuid())
+  tutor_id   String
+  start_date DateTime @db.Time()
+  end_date   DateTime @db.Time()
+  day        WeekDay
+
+  tutor TutorProfile @relation(fields: [tutor_id], references: [id])
+
+  @@map("available_days")
+}
+
+enum BookingStatus {
+  confirm   @map("CONFIRM")
+  completed @map("COMPLETED")
+  cancelled @map("CANCELLED")
+}
+
+model Booking {
+  id          String        @id @unique @default(uuid())
+  tutor_id    String
+  student_id  String
+  start_time  DateTime      @db.Time()
+  end_time    DateTime      @db.Time()
+  date        DateTime      @db.Time()
+  total_price Int
+  status      BookingStatus @default(confirm)
+
+  tutorProfile TutorProfile @relation(fields: [tutor_id], references: [id])
+  user         User         @relation(fields: [student_id], references: [id])
+  rating       Rating?
+
+  @@map("bookings")
+}
+
+model Rating {
+  id         String   @id @unique @default(uuid())
+  booking_id String   @unique
+  rating     Int      @db.SmallInt
+  review     String?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  booking Booking @relation(fields: [booking_id], references: [id])
+
+  @@map("ratings")
 }
