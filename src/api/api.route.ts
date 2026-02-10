@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { AuthRoutes } from "./auth/auth.route";
+import { TutorsRoutes } from "./tutors/tutors.route";
 
 const router = Router();
 
@@ -14,5 +15,6 @@ router.use("/auth", AuthRoutes);
 // tutor route
 
 // tutors route
+router.use("/tutors", TutorsRoutes);
 
 export { router as ApiRoutes };
