@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "buildCommand": "pnpm run vercel-build",
+  "installCommand": "pnpm install",
+  "builds": [
+    {
+      "src": "api/app.mjs",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/api/app.mjs"
+    }
+  ]
+}

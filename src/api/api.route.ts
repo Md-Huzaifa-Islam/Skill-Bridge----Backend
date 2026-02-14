@@ -1,20 +1,16 @@
 import { Router } from "express";
 import { AuthRoutes } from "./auth/auth.route";
-import { TutorsRoutes } from "./tutors/tutors.route";
-import { CategoriesRoutes } from "./categories/categories.route";
 import { BookingsRoutes } from "./bookings/bookings.route";
+import { CategoriesRoutes } from "./categories/categories.route";
 import { TutorRoutes } from "./tutor/tutor.route";
-import { toNodeHandler } from "better-auth/node";
-import { auth } from "../lib/auth";
+import { TutorsRoutes } from "./tutors/tutors.route";
 
 const router = Router();
 
 // admin route
 
 // auth route
-// router.use("/auth", AuthRoutes);
-// auth handlers
-router.all("/auth/*splat", toNodeHandler(auth));
+router.use("/auth", AuthRoutes);
 
 // bookings route
 router.use("/bookings", BookingsRoutes);
